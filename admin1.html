@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <title>Movie Hub - Admin Panel</title>
+    <style>
+        body { background: #111; color: white; font-family: sans-serif; padding: 20px; text-align: center; }
+        .box { background: #222; padding: 30px; border-radius: 10px; max-width: 400px; margin: auto; border-top: 5px solid #e50914; }
+        input { width: 90%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #444; background: #333; color: white; }
+        button { width: 95%; padding: 10px; background: #e50914; color: white; border: none; cursor: pointer; font-weight: bold; }
+        .list { margin-top: 20px; text-align: left; background: #1a1a1a; padding: 10px; }
+        .item { display: flex; justify-content: space-between; padding: 5px; border-bottom: 1px solid #333; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Add Movie</h2>
+        <input type="text" id="mName" placeholder="Movie Name (e.g. Spiderman)">
+        <input type="text" id="mUrl" placeholder="YouTube Embed Link Only">
+        <p style="font-size: 11px; color: #888;">Example: https://www.youtube.com/embed/xxxxxxx</p>
+        <button onclick="saveMovie()">ADD MOVIE</button>
+        <div id="adminList" class="list"></div>
+        <br>
+        <button onclick="localStorage.clear(); location.reload();" style="background: #444;">CLEAR ALL DATA</button>
+    </div>
+
+    <script>
+        function saveMovie() {
+            let name = document.getElementById('mName').value;
+            let url = document.getElementById('mUrl').value;
+            if(!name || !url) return alert("කරුණාකර සියල්ල පුරවන්න!");
+
+            let movies = JSON.parse(localStorage.getItem('movies') || "[]");
+            movies.push({ name: name, url: url });
+            localStorage.setItem('movies', JSON.stringify(movies));
+            alert("සාර්ථකව එකතු කළා!");
+            location.reload();
+        }
+
+        let movies = JSON.parse(localStorage.getItem('movies') || "[]");
+        movies.forEach((m, i) => {
+            document.getElementById('adminList').innerHTML += `<div class="item"><span>${m.name}</span> <button onclick="del(${i})" style="width:auto; background:red; padding:2px 5px;">X</button></div>`;
+        });
+
+        function del(i) {
+            let m = JSON.parse(localStorage.getItem('movies'));
+            m.splice(i, 1);
+            localStorage.setItem('movies', JSON.stringify(m));
+            location.reload();
+        }
+    </script>
+</body>
+</html>
