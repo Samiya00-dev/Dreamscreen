@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamScreen - Premium Wallpapers</title>
+    <style>
+        /* --- මුල් Design එක සහ Neon Effect එක (වෙනස් කර නැත) --- */
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: #0b0b0b; color: white; scroll-behavior: smooth; }
+        header { text-align: center; padding: 60px 20px; }
+        .logo { font-size: clamp(2.5rem, 8vw, 4.5rem); font-weight: bold; color: #fff; text-transform: uppercase; display: inline-block; padding: 15px 30px; border: 4px solid transparent; border-radius: 10px; animation: neonBorder 3s infinite alternate; }
+        @keyframes neonBorder { 0% { border-color: #ffcc00; box-shadow: 0 0 20px #ffcc00, inset 0 0 10px #ffcc00; } 100% { border-color: #ff0000; box-shadow: 0 0 20px #ff0000, inset 0 0 10px #ff0000; } }
+        
+        nav { background: rgba(26, 26, 26, 0.95); padding: 15px; position: sticky; top: 0; z-index: 1000; display: flex; justify-content: center; gap: 25px; backdrop-filter: blur(10px); border-bottom: 1px solid #333; }
+        nav a { color: #ddd; text-decoration: none; font-weight: 500; transition: 0.3s; cursor: pointer; }
+        nav a:hover { color: #ffcc00; }
+
+        .container { max-width: 1200px; margin: auto; padding: 20px; }
+
+        /* --- අලුතින් එක් කළ Search Bar Style එක --- */
+        .search-container {
+            margin: 20px auto;
+            max-width: 600px;
+            position: relative;
+        }
+        .search-bar {
+            width: 100%;
+            padding: 15px 25px;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 30px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.3s;
+        }
+        .search-bar:focus {
+            border-color: #ffcc00;
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.2);
+        }
+
+        h2 { border-left: 5px solid #ff0000; padding-left: 15px; margin: 40px 0 25px; color: #fff; }
+
+        /* Category Filter Styling */
+        .filter-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; justify-content: center; }
+        .filter-btn { background: #222; border: 1px solid #444; color: #ccc; padding: 8px 18px; border-radius: 20px; cursor: pointer; transition: 0.3s; }
+        .filter-btn.active { background: #ffcc00; color: #000; border-color: #ffcc00; }
+
+        /* Wallpaper Grid */
+        .wallpaper-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+        .wp-card { background: #1a1a1a; border-radius: 15px; overflow: hidden; transition: 0.3s; border: 1px solid #333; }
+        .wp-card:hover { transform: translateY(-10px); border-color: #ffcc00; }
+        .wp-card img { width: 100%; height: 400px; object-fit: cover; }
+        .wp-info { padding: 15px; }
+        .wp-title { font-size: 1.1rem; margin: 0; font-weight: bold; }
+        .wp-cat { font-size: 0.8rem; color: #ffcc00; margin-top: 5px; }
+
+        /* Download Modal */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; }
+        .modal-content { background: #1a1a1a; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; border: 2px solid #ffcc00; }
+        .size-option { display: block; background: #333; color: white; padding: 12px; margin: 10px 0; text-decoration: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .size-option:hover { background: #ff0000; }
+        .close-modal { margin-top: 15px; color: #888; cursor: pointer; display: inline-block; }
+
+        footer { text-align: center; padding: 50px; color: #666; font-size: 0.9rem; border-top: 1px solid #222; margin-top: 50px; }
+    </style>
+</head>
+<body>
+
+    <header id="home">
+        <div class="logo">DREAMSCREEN</div>
+    </header>
+
+    <nav>
+        <a onclick="window.scrollTo(0,0)">Home</a>
+        <a href="#gallery">Wallpapers</a>
+    </nav>
+
+    <div class="container">
+        <div class="search-container">
+            <input type="text" class="search-bar" id="wallpaperSearch" placeholder="Search wallpapers by name..." onkeyup="searchWallpapers()">
+        </div>
+
+        <div class="filter-container">
+            <button class="filter-btn active" onclick="filterByCat('All')">All</button>
+            <button class="filter-btn" onclick="filterByCat('Nature & Outdoors')">Nature</button>
+            <button class="filter-btn" onclick="filterByCat('Technology & Gaming')">Tech</button>
+            <button class="filter-btn" onclick="filterByCat('Transportation & Engines')">Cars</button>
+            <button class="filter-btn" onclick="filterByCat('Digital Art & Design')">Digital Art</button>
+            <button class="filter-btn" onclick="filterByCat('Space & Science')">Space</button>
+        </div>
+        
+        <section id="gallery">
+            <h2 id="gallery-title">Latest Wallpapers</h2>
+            <div id="wallpaper-display" class="wallpaper-grid"></div>
+        </section>
+    </div>
+
+    <div id="downloadModal" class="modal">
+        <div class="modal-content">
+            <h3>Get Wallpaper</h3>
+            <p id="modal-wp-name" style="font-size: 0.9rem; color: #888; margin-bottom: 20px;"></p>
+            <div id="download-trigger" class="size-option">Download Original Quality</div>
+            <p id="dl-status" style="font-size: 0.75rem; color: #ffcc00; display: none;">Downloading... Please wait.</p>
+            <span class="close-modal" onclick="closeModal()">Close</span>
+        </div>
+    </div>
+
+    <footer><p>&copy; 2026 DreamScreen Wallpapers</p></footer>
+
+    <script>
+        let allWallpapers = JSON.parse(localStorage.getItem('myWallpapers')) || [];
+
+        // --- පින්තූර පෙන්වීමේ ප්‍රධාන Function එක ---
+        function renderWallpapers(dataList) {
+            const display = document.getElementById('wallpaper-display');
+            display.innerHTML = "";
+
+            if(dataList.length === 0) {
+                display.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 50px; color: #555;">No wallpapers found matching your search.</div>';
+                return;
+            }
+
+            [...dataList].reverse().forEach(wp => {
+                const card = `
+                    <div class="wp-card">
+                        <img src="${wp.url}" alt="${wp.title}">
+                        <div class="wp-info">
+                            <p class="wp-title">${wp.title}</p>
+                            <p class="wp-cat">${wp.category}</p>
+                        </div>
+                        <button onclick="openDownloadModal('${wp.url}', '${wp.title}')" style="width:100%; border:none; background:#222; color:#ffcc00; padding:12px; cursor:pointer; font-weight:bold; border-top:1px solid #333;">Get Wallpaper</button>
+                    </div>
+                `;
+                display.innerHTML += card;
+            });
+        }
+
+        // --- Live Search පහසුකම ---
+        function searchWallpapers() {
+            const searchTerm = document.getElementById('wallpaperSearch').value.toLowerCase();
+            const filtered = allWallpapers.filter(wp => 
+                wp.title.toLowerCase().startsWith(searchTerm)
+            );
+            
+            // Search කරන විට Category Title එක වෙනස් කිරීම
+            document.getElementById('gallery-title').innerText = searchTerm ? `Results for "${searchTerm}"` : "Latest Wallpapers";
+            renderWallpapers(filtered);
+        }
+
+        function filterByCat(cat) {
+            document.getElementById('wallpaperSearch').value = ""; // Search එක clear කිරීම
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            if(event) event.target.classList.add('active');
+            
+            const filtered = cat === 'All' ? allWallpapers : allWallpapers.filter(w => w.category === cat);
+            renderWallpapers(filtered);
+            document.getElementById('gallery-title').innerText = cat === 'All' ? "Latest Wallpapers" : cat + " Wallpapers";
+        }
+
+        // --- Download System එක (වෙනස් කර නැත) ---
+        async function startDownload(url, filename) {
+            const status = document.getElementById('dl-status');
+            status.style.display = "block";
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = filename + ".jpg";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(blobUrl);
+                status.style.display = "none";
+                closeModal();
+            } catch (error) {
+                window.open(url, '_blank');
+                status.innerText = "Error! Opening image in new tab.";
+            }
+        }
+
+        function openDownloadModal(url, title) {
+            document.getElementById('downloadModal').style.display = "flex";
+            document.getElementById('modal-wp-name').innerText = title;
+            document.getElementById('download-trigger').onclick = () => startDownload(url, title);
+        }
+
+        function closeModal() {
+            document.getElementById('downloadModal').style.display = "none";
+        }
+
+        window.addEventListener('DOMContentLoaded', () => renderWallpapers(allWallpapers));
+    </script>
+</body>
+</html>

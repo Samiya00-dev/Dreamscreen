@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamScreen - Super Admin</title>
+    <style>
+        :root { --accent: #ffcc00; --bg: #0b0b0b; --card: #1a1a1a; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; display: flex; }
+        
+        /* Sidebar */
+        .sidebar { width: 250px; height: 100vh; background: var(--card); border-right: 2px solid var(--accent); position: fixed; padding: 20px; box-sizing: border-box; }
+        .sidebar h2 { color: var(--accent); font-size: 1.5rem; margin-bottom: 30px; }
+        .sidebar a { display: block; color: #bbb; text-decoration: none; padding: 12px 0; border-bottom: 1px solid #333; transition: 0.3s; }
+        .sidebar a:hover { color: var(--accent); padding-left: 10px; }
+
+        /* Main Content */
+        .main { margin-left: 250px; padding: 40px; width: 100%; }
+        .section { background: var(--card); padding: 30px; border-radius: 15px; margin-bottom: 30px; border: 1px solid #333; }
+        h3 { color: var(--accent); margin-top: 0; }
+
+        /* Form Styling */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #888; }
+        input, select { width: 100%; padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; }
+        
+        /* Drag & Drop Area */
+        .drop-area { border: 2px dashed #444; padding: 30px; text-align: center; border-radius: 10px; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .drop-area:hover { border-color: var(--accent); background: #111; }
+        #preview-img { max-width: 100%; height: 150px; object-fit: cover; display: none; margin-top: 15px; border-radius: 5px; }
+
+        .btn { background: var(--accent); color: black; border: none; padding: 12px 25px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.3s; }
+        .btn:hover { background: #e6b800; transform: scale(1.02); }
+
+        /* Manage Grid */
+        .manage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .manage-card { background: #222; border-radius: 10px; overflow: hidden; border: 1px solid #333; }
+        .manage-card img { width: 100%; height: 120px; object-fit: cover; }
+        .manage-actions { padding: 10px; display: flex; gap: 5px; }
+        .btn-del { background: #ff4444; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; flex: 1; }
+        .btn-edit { background: #444; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; flex: 1; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>DreamScreen</h2>
+        <a href="#add-section">Add Wallpaper</a>
+        <a href="#manage-section">Manage Wallpapers</a>
+        <a href="index.html" style="color: #ff4444; margin-top: 40px;">← Back to Site</a>
+    </div>
+
+    <div class="main">
+        <div class="section" id="add-section">
+            <h3 id="form-title">Add New Wallpaper</h3>
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="wpTitle" placeholder="e.g. Neon City">
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select id="wpCat">
+                    <option>Nature & Outdoors</option>
+                    <option>Technology & Gaming</option>
+                    <option>Transportation & Engines</option>
+                    <option>Digital Art & Design</option>
+                    <option>Space & Science</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Option 1: Image Direct Link (URL)</label>
+                <input type="text" id="wpUrl" placeholder="https://i.ibb.co/example.jpg">
+            </div>
+            <div class="form-group">
+                <label>Option 2: Drag & Drop / Upload Image File</label>
+                <div class="drop-area" id="drop-area">
+                    <p id="drop-text">Drop image here or click to upload</p>
+                    <input type="file" id="fileInput" hidden accept="image/*">
+                    <img id="preview-img" src="">
+                </div>
+            </div>
+            <button class="btn" id="save-btn" onclick="saveWallpaper()">Publish Wallpaper</button>
+            <button class="btn" id="update-btn" style="display:none; background:#00ff00;" onclick="finishUpdate()">Update Changes</button>
+        </div>
+
+        <div class="section" id="manage-section">
+            <h3>Manage Your Wallpapers</h3>
+            <div id="manage-grid" class="manage-grid">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        let wallpapers = JSON.parse(localStorage.getItem('myWallpapers')) || [];
+        let editIndex = -1;
+
+        // --- Drag and Drop Handling ---
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('fileInput');
+        const previewImg = document.getElementById('preview-img');
+        let uploadedBase64 = "";
+
+        dropArea.onclick = () => fileInput.click();
+
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        };
+
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                uploadedBase64 = e.target.result;
+                previewImg.src = uploadedBase64;
+                previewImg.style.display = "block";
+                document.getElementById('drop-text').style.display = "none";
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- පින්තූරය Save කිරීම ---
+        function saveWallpaper() {
+            const title = document.getElementById('wpTitle').value;
+            const cat = document.getElementById('wpCat').value;
+            const url = document.getElementById('wpUrl').value;
+            
+            // එක්කෝ URL එකක් හෝ Upload කළ පින්තූරයක් තිබිය යුතුයි
+            const finalUrl = url || uploadedBase64;
+
+            if (title && finalUrl) {
+                wallpapers.push({ title, category: cat, url: finalUrl, id: Date.now() });
+                localStorage.setItem('myWallpapers', JSON.stringify(wallpapers));
+                resetForm();
+                renderManageGrid();
+                alert("Wallpaper Added!");
+            } else {
+                alert("Please add a title and an image (URL or File)!");
+            }
+        }
+
+        // --- Manage Grid එක පෙන්වීම ---
+        function renderManageGrid() {
+            const grid = document.getElementById('manage-grid');
+            grid.innerHTML = "";
+            
+            wallpapers.forEach((wp, index) => {
+                grid.innerHTML += `
+                    <div class="manage-card">
+                        <img src="${wp.url}">
+                        <div class="manage-actions">
+                            <button class="btn-edit" onclick="editWallpaper(${index})">Edit</button>
+                            <button class="btn-del" onclick="deleteWallpaper(${index})">Delete</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- Delete කිරීම ---
+        function deleteWallpaper(index) {
+            if (confirm("Are you sure you want to delete this?")) {
+                wallpapers.splice(index, 1);
+                localStorage.setItem('myWallpapers', JSON.stringify(wallpapers));
+                renderManageGrid();
+            }
+        }
+
+        // --- Edit කිරීම ---
+        function editWallpaper(index) {
+            const wp = wallpapers[index];
+            document.getElementById('wpTitle').value = wp.title;
+            document.getElementById('wpCat').value = wp.category;
+            document.getElementById('wpUrl').value = wp.url.startsWith('data:') ? "" : wp.url;
+            
+            editIndex = index;
+            document.getElementById('save-btn').style.display = "none";
+            document.getElementById('update-btn').style.display = "block";
+            document.getElementById('form-title').innerText = "Edit Wallpaper";
+            window.scrollTo(0,0);
+        }
+
+        function finishUpdate() {
+            wallpapers[editIndex].title = document.getElementById('wpTitle').value;
+            wallpapers[editIndex].category = document.getElementById('wpCat').value;
+            wallpapers[editIndex].url = document.getElementById('wpUrl').value || uploadedBase64 || wallpapers[editIndex].url;
+            
+            localStorage.setItem('myWallpapers', JSON.stringify(wallpapers));
+            resetForm();
+            renderManageGrid();
+            alert("Updated Successfully!");
+        }
+
+        function resetForm() {
+            document.getElementById('wpTitle').value = "";
+            document.getElementById('wpUrl').value = "";
+            fileInput.value = "";
+            previewImg.style.display = "none";
+            document.getElementById('drop-text').style.display = "block";
+            uploadedBase64 = "";
+            document.getElementById('save-btn').style.display = "block";
+            document.getElementById('update-btn').style.display = "none";
+            document.getElementById('form-title').innerText = "Add New Wallpaper";
+        }
+
+        window.onload = renderManageGrid;
+    </script>
+</body>
+</html>
